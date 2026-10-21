@@ -1,33 +1,47 @@
-import express from 'express';
-import dotenv from 'dotenv';
+import express from "express";
+import dotenv from "dotenv";
 
-dotenv.config(); // Load environment variables from .env file
+import evaluationRoutes from "./routes/evaluationRoutes.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
-const app = express(); // Create an instance of the Express application
+import {  requestLogger} from "./middleware/requestLogger.js";
 
-const PORT = process.env.PORT || 3000; // Define a port for the server to listen on
 
-app.use(express.json()); // Middleware to parse JSON request bodies
+dotenv.config();
 
-app.get('/api/health', (req, res) => { // Define a route for the health check endpoint
-    res.status(200).json({ 
-        status: 'OK',
-        application: 'LookBook Smart Pricing AI Backend', 
-        message: 'Server is healthy',
-        timestamp: new Date().toISOString()
-    }); 
+const app = express();
+app.use(requestLogger);
+
+const PORT = process.env.PORT || 3000;
+
+// Middleware per richieste JSON
+app.use(express.json());
+
+// Health check
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    service: "lookbook-smart-pricing-ai-backend"
+  });
 });
 
-// Catch-all route for undefined endpoints
+// Route di valutazione
+app.use("/api", evaluationRoutes);
+
+// Gestione percorsi non esistenti
 app.use((req, res) => {
-    res.status(404).json({
-        status: 'error',
-        message: 'Endpoint not found',
-        timestamp: new Date().toISOString()
-    });
+  res.status(404).json({
+    error: {
+      code: "NOT_FOUND",
+      message: "Endpoint non trovato.",
+      details: []
+    }
+  });
 });
 
-// Start the server and listen on the defined port
+// Middleware errori: deve essere registrato per ultimo
+app.use(errorHandler);
+
 app.listen(PORT, () => {
-  console.log(`LookBook Backend  is running on http://localhost:${PORT}`);
-}); 
+  console.log(`Backend attivo su http://localhost:${PORT}`);
+});
