@@ -1,12 +1,16 @@
 <script setup>
 import { computed, ref } from "vue";
-
+import { evaluateGarment } from "./services/api.js";
 import GarmentForm from "./components/GarmentForm.vue";
 import EvaluationResult from "./components/EvaluationResult.vue";
 import BackendStatus from "./components/BackendStatus.vue";
 
+import ErrorMessage from "./components/ErrorMessage.vue";
+import { getUserFriendlyError } from "./utils/apiErrors.js";
+
+
 // Stati possibili: idle, loading, success, error
-const requestStatus = ref("idle");
+const status = ref("idle");
 
 // Risultato della valutazione
 const evaluation = ref(null);
@@ -14,167 +18,74 @@ const evaluation = ref(null);
 // Messaggio di errore
 const errorMessage = ref("");
 
-// Modalità di simulazione:
-// false = risposta corretta
-// true  = errore simulato
-const simulateError = ref(false);
+// ID della richiesta in caso di errore
+const errorRequestId = ref(null);
 
 // Prop derivata dallo stato della richiesta
 const isLoading = computed(() => {
   return requestStatus.value === "loading";
 });
 
-// Dati di esempio
-const mockEvaluation = {
-  suggested_price: 22,
-  range: {
-    min: 18,
-    max: 27,
-  },
-  motivation:
-    "Il capo presenta un buon equilibrio tra riconoscibilità " +
-    "del brand, condizioni generali e domanda potenziale " +
-    "nel mercato second-hand.",
-  selling_tips: [
-    "Utilizza fotografie luminose che mostrino tutti i dettagli.",
-    "Indica chiaramente taglia, misure e condizioni del capo.",
-    "Pubblica l'annuncio con un prezzo leggermente negoziabile.",
-  ],
-};
 
-// Simula una richiesta asincrona al backend
-async function simulateEvaluation(garmentData) {
-  // Attende 2 secondi
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-
-  if (simulateError.value) {
-    throw new Error("Errore simulato durante la valutazione AI.");
-  }
-
-  // Restituisce una copia indipendente del JSON
-  return {
-    ...mockEvaluation,
-    range: { ...mockEvaluation.range },
-    selling_tips: [...mockEvaluation.selling_tips],
-  };
-}
-
-// Riceve il submit da GarmentForm.vue
-async function handleGarmentSubmit(garmentData) {
-  if (isLoading.value) {
+async function handleEvaluate(garmentData) {
+  // Evita richieste duplicate
+  if (status.value === "loading") {
     return;
   }
 
-  requestStatus.value = "loading";
+  status.value = "loading";
   evaluation.value = null;
   errorMessage.value = "";
-
-  console.log("Richiesta di valutazione:", {
-    imageName: garmentData.image.name,
-    category: garmentData.category,
-    brand: garmentData.brand,
-    condition: garmentData.condition,
-  });
+  errorRequestId.value = null;
 
   try {
-    const result = await simulateEvaluation(garmentData);
+    const result = await evaluateGarment(garmentData);
 
     evaluation.value = result;
-    requestStatus.value = "success";
+    status.value = "success";
 
-    console.log("Valutazione completata:", result);
   } catch (error) {
-    evaluation.value = null;
-    errorMessage.value =
-      error instanceof Error
-        ? error.message
-        : "Errore imprevisto durante la valutazione.";
+    errorMessage.value = getUserFriendlyError(error);
+    errorRequestId.value = error.requestId ?? null;
 
-    requestStatus.value = "error";
-
-    console.error("Errore valutazione:", error);
+    status.value = "error";
   }
 }
+
 </script>
 
 <template>
   <main>
     <header class="app-header">
       <h1>LookBook Smart Pricing AI</h1>
-
-      <p>
-        Sistema intelligente per la valutazione di capi d'abbigliamento
-        second-hand.
-      </p>
     </header>
 
-    <!-- Controlli disponibili solo nella demo -->
-    <section class="demo-controls">
-      <h2>Modalità dimostrativa</h2>
+    <BackendStatus />
 
-      <label>
-        <input v-model="simulateError" type="checkbox" :disabled="isLoading" />
-        Simula errore durante la valutazione
-      </label>
+    <GarmentForm
+      :is-loading="status === 'loading'"
+      @submit="handleEvaluate"
+    />
 
-      <p>La richiesta viene simulata con un'attesa di circa 2 secondi.</p>
-    </section>
-
-    <div class="app-layout">
-      <!-- Form -->
-      <GarmentForm :is-loading="isLoading" @submit="handleGarmentSubmit" />
-
-      <!-- Area risultato -->
-      <section class="result-area" aria-live="polite">
-        <!-- IDLE -->
-        <div v-if="requestStatus === 'idle'" class="status-panel idle-panel">
-          <h2>In attesa della valutazione</h2>
-
-          <p>
-            Compila il form e carica una fotografia per ottenere il prezzo
-            suggerito.
-          </p>
-        </div>
-
-        <!-- LOADING -->
-        <div
-          v-else-if="requestStatus === 'loading'"
-          class="status-panel loading-panel"
-          role="status"
-        >
-          <div class="spinner" aria-hidden="true"></div>
-
-          <h2>Analisi in corso...</h2>
-
-          <p>Stiamo elaborando le informazioni del capo.</p>
-        </div>
-
-        <!-- SUCCESS -->
-        <EvaluationResult
-          v-else-if="requestStatus === 'success' && evaluation"
-          :evaluation="evaluation"
-        />
-
-        <!-- ERROR -->
-        <div
-          v-else-if="requestStatus === 'error'"
-          class="status-panel error-panel"
-          role="alert"
-        >
-          <h2>Valutazione non riuscita</h2>
-
-          <p>{{ errorMessage }}</p>
-
-          <p>Verifica le informazioni e riprova.</p>
-        </div>
-      </section>
-    </div>
-
-    <p class="demo-notice">
-      Modalità dimostrativa: nessuna richiesta viene inviata al modello AI.
+    <p v-if="status === 'loading'" role="status" aria-live="polite">
+      Analisi AI in corso...
     </p>
 
-    <BackendStatus />
+    <!-- <div v-if="status === 'error'" role="alert">
+      {{ errorMessage }}
+    </div> -->
+
+    <ErrorMessage
+      v-if="status === 'error'"
+      :message="errorMessage"
+      :request-id="errorRequestId"
+    />
+
+
+    <EvaluationResult
+      v-if="status === 'success' && evaluation"
+      :evaluation="evaluation"
+    />
   </main>
 </template>
 
