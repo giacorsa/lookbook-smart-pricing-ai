@@ -1,11 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
-
 import evaluationRoutes from "./routes/evaluationRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-
-import {  requestLogger} from "./middleware/requestLogger.js";
-
+import { requestLogger} from "./middleware/requestLogger.js";
 
 dotenv.config();
 
@@ -25,6 +22,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+
 // Route di valutazione
 app.use("/api", evaluationRoutes);
 
@@ -38,6 +36,8 @@ app.use((req, res) => {
     }
   });
 });
+
+
 
 // Middleware errori: deve essere registrato per ultimo
 app.use(errorHandler);

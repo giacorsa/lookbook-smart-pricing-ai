@@ -1,5 +1,6 @@
 <script setup>
-import { computed, ref } from "vue";
+
+import { ref } from "vue";
 import { evaluateGarment } from "./services/api.js";
 import GarmentForm from "./components/GarmentForm.vue";
 import EvaluationResult from "./components/EvaluationResult.vue";
@@ -7,7 +8,6 @@ import BackendStatus from "./components/BackendStatus.vue";
 
 import ErrorMessage from "./components/ErrorMessage.vue";
 import { getUserFriendlyError } from "./utils/apiErrors.js";
-
 
 // Stati possibili: idle, loading, success, error
 const status = ref("idle");
@@ -20,12 +20,6 @@ const errorMessage = ref("");
 
 // ID della richiesta in caso di errore
 const errorRequestId = ref(null);
-
-// Prop derivata dallo stato della richiesta
-const isLoading = computed(() => {
-  return requestStatus.value === "loading";
-});
-
 
 async function handleEvaluate(garmentData) {
   // Evita richieste duplicate
@@ -71,10 +65,6 @@ async function handleEvaluate(garmentData) {
       Analisi AI in corso...
     </p>
 
-    <!-- <div v-if="status === 'error'" role="alert">
-      {{ errorMessage }}
-    </div> -->
-
     <ErrorMessage
       v-if="status === 'error'"
       :message="errorMessage"
@@ -86,6 +76,7 @@ async function handleEvaluate(garmentData) {
       v-if="status === 'success' && evaluation"
       :evaluation="evaluation"
     />
+
   </main>
 </template>
 
