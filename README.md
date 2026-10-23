@@ -1,48 +1,51 @@
 # LookBook Smart Pricing AI
 
-Applicazione web basata su Intelligenza Artificiale per la valutazione del prezzo di vendita di capi di abbigliamento second-hand.
+An AI-powered web application that estimates resale prices for second-hand clothing from a garment photo and a few descriptive details.
 
-Progetto finale del percorso **Agent AI per lo sviluppo — start2impact**.
+**Final project — start2impact, AI Agents for Development course.**
 
-## 1. Descrizione
+## Overview
 
-LookBook Smart Pricing AI permette all'utente di caricare la fotografia di un capo di abbigliamento e specificarne le caratteristiche principali.
+LookBook Smart Pricing AI helps users estimate a suitable listing price for a second-hand garment. Users upload a photo and provide its category, brand, and condition. A multimodal AI model returns:
 
-Attraverso un modello linguistico multimodale, l'applicazione genera:
+- A suggested selling price in euros
+- A minimum and maximum price range
+- An explanation of the estimate
+- Three practical tips to improve the listing
 
-- Un prezzo di vendita consigliato.
-- Un intervallo di prezzo minimo e massimo.
-- Una motivazione della valutazione.
-- Tre suggerimenti per migliorare le possibilità di vendita.
+Completed evaluations are stored in PostgreSQL. Estimates are indicative AI-generated suggestions, **not verified real-time market valuations**.
 
-Le valutazioni vengono salvate in PostgreSQL.
+## Tech Stack
 
-Le stime sono indicative e non costituiscono quotazioni di mercato verificate.
-
-## 2. Tecnologie utilizzate
-
-| Livello | Tecnologia |
-|---|---|
+| Layer | Technology |
+| --- | --- |
 | Frontend | Vue 3, Vite, JavaScript |
 | Backend | Node.js, Express |
-| Intelligenza Artificiale | Groq API, modello multimodale configurabile |
+| AI | Groq API and a configurable vision-capable model |
 | Database | PostgreSQL |
-| Comunicazione | REST API, JSON, multipart/form-data |
+| Communication | REST API, JSON, multipart/form-data |
 
-## 3. Architettura
+## Architecture
 
-L'applicazione utilizza un'architettura client-server.
+```text
+User
+  |
+  v
+Vue 3 frontend
+  |  Photo + garment details
+  v
+Express backend
+  |-- Input validation
+  |-- Multimodal request -> Groq API
+  |-- AI response validation
+  |-- Save evaluation -> PostgreSQL
+  v
+JSON response -> Vue result display
+```
 
-1. L'utente carica un'immagine e inserisce categoria, brand e stato del capo.
-2. Vue invia i dati al backend Express.
-3. Il backend valida le informazioni e prepara la richiesta multimodale.
-4. Groq elabora la fotografia e i dati del capo.
-5. Il backend valida la risposta AI e salva la valutazione in PostgreSQL.
-6. Il frontend visualizza prezzo, range, motivazione e consigli.
+The backend separates routing, controllers, validation, AI prompts and services, and database access into dedicated modules.
 
-La logica AI, la gestione HTTP e la persistenza sono separate in moduli dedicati.
-
-## 4. Struttura del progetto
+## Project Structure
 
 ```text
 lookbook-smart-pricing-ai/
@@ -74,189 +77,171 @@ lookbook-smart-pricing-ai/
 └── README.md
 ```
 
-## 5. Requisiti per l'esecuzione
+## Prerequisites
 
-- Node.js e npm.
-- PostgreSQL.
-- Una chiave API Groq.
-- Un modello Groq multimodale compatibile con l'analisi delle immagini.
+- Node.js and npm
+- PostgreSQL
+- A Groq API key
+- Access to a Groq model that supports image input
 
-## 6. Configurazione del database
+## Local Setup
 
-Creare un database PostgreSQL, ad esempio:
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/giacorsa/lookbook-smart-pricing-ai.git
+cd lookbook-smart-pricing-ai
+```
+
+### 2. Configure PostgreSQL
+
+Create a database, for example:
 
 ```sql
 CREATE DATABASE lookbook_smart_pricing;
 ```
 
-Eseguire successivamente lo script:
+Run `backend/database/migrations/001_initial_schema.sql` against that database. For example, with the PostgreSQL command-line client:
 
-```text
-backend/database/migrations/001_initial_schema.sql
+```bash
+psql -U postgres -d lookbook_smart_pricing -f backend/database/migrations/001_initial_schema.sql
 ```
 
-Lo script crea la tabella `evaluations`, utilizzata per conservare le valutazioni AI.
+Configure a PostgreSQL account with permission to connect to the database and insert records into the `evaluations` table. The database username and password must match the backend environment variables.
 
-L'utente PostgreSQL configurato nel backend deve disporre dei permessi necessari per connettersi al database e inserire record nella tabella.
-
-## 7. Configurazione del backend
-
-Entrare nella directory:
+### 3. Configure and start the backend
 
 ```bash
 cd backend
-```
-
-Installare le dipendenze:
-
-```bash
 npm ci
 ```
 
-Creare un file `.env` a partire da `.env.example`.
-
-Configurare le variabili:
+Copy `.env.example` to `.env` and configure the values:
 
 ```dotenv
 PORT=3000
 NODE_ENV=development
 
-GROQ_API_KEY=
-GROQ_MODEL=qwen/qwen3.8-27b
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=your_vision_capable_groq_model
 GROQ_TIMEOUT_MS=30000
 
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=lookbook_smart_pricing
 DB_USER=lookbook_app
-DB_PASSWORD=
+DB_PASSWORD=your_database_password
 DB_POOL_MAX=10
 ```
 
-Inserire i valori effettivi di `GROQ_API_KEY`, `DB_USER` e `DB_PASSWORD`.
+Use a Groq model identifier that is available to your account and supports image input. The repository's `.env.example` provides the project's configured default; confirm that it is currently supported before running the application.
 
-Non pubblicare il file `.env` nel repository.
-
-Avviare il backend:
+Start the backend:
 
 ```bash
 npm run dev
 ```
 
-Per l'avvio senza modalità di sviluppo:
+The default backend URL is `http://localhost:3000`.
 
-```bash
-npm start
-```
+### 4. Configure and start the frontend
 
-Il backend utilizza normalmente la porta `3000`.
-
-## 8. Configurazione del frontend
-
-Aprire un secondo terminale ed entrare nella directory:
+Open a second terminal in the repository root:
 
 ```bash
 cd frontend
-```
-
-Installare le dipendenze:
-
-```bash
 npm ci
-```
-
-Avviare Vite:
-
-```bash
 npm run dev
 ```
 
-Aprire nel browser l'indirizzo indicato dal terminale, normalmente:
+Open the URL displayed by Vite (typically `http://localhost:5173`). The Vite development configuration routes `/api` requests to the backend.
 
-```text
-http://localhost:5173
-```
+## Using the Application
 
-Durante lo sviluppo, Vite inoltra le richieste `/api` al backend Express.
+1. Upload a clear photo of a garment.
+2. Enter its category and brand.
+3. Select its condition: `nuovo` (new), `buono` (good), or `usato` (used).
+4. Select **Valuta il capo** to request an AI estimate.
+5. Review the suggested price, price range, explanation, and selling tips.
 
-## 9. API REST
+The user interface and generated evaluation text are currently in Italian.
 
-### POST /api/evaluate
+## API
 
-Riceve una richiesta `multipart/form-data` con i campi:
+### `POST /api/evaluate`
 
-| Campo | Descrizione |
-|---|---|
-| `image` | Fotografia del capo |
-| `category` | Categoria |
-| `brand` | Marca |
-| `condition` | Stato: nuovo, buono oppure usato |
+Accepts a `multipart/form-data` request containing the garment photo and descriptive fields.
 
-Esempio di risposta:
+| Field | Description |
+| --- | --- |
+| `image` | Garment photo |
+| `category` | Garment category |
+| `brand` | Brand name |
+| `condition` | `nuovo`, `buono`, or `usato` |
+
+Example evaluation payload (illustrative values):
 
 ```json
 {
-  "suggested_price": 22,
+  "suggested_price": 15,
   "range": {
-    "min": 18,
-    "max": 27
+    "min": 10,
+    "max": 20
   },
-  "motivation": "Motivazione generata dal modello AI.",
+  "motivation": "The suggested price reflects the garment's stated condition and visible characteristics.",
   "selling_tips": [
-    "Utilizzare fotografie ben illuminate.",
-    "Descrivere accuratamente le condizioni.",
-    "Indicare le misure del capo."
+    "Include a clear photo of the size and fabric label.",
+    "Show close-up photos of seams and closures.",
+    "List accurate garment measurements."
   ]
 }
 ```
 
-### GET /api/health
+### `GET /api/health`
 
-Restituisce lo stato del servizio backend.
+Returns the backend service status.
 
-## 10. System prompt e modello AI
+## AI Integration
 
-Il backend utilizza un system prompt dedicato alla valutazione di capi second-hand.
+The backend prepares a multimodal request combining the garment details with the uploaded image, represented as base64. A dedicated system prompt guides the model to produce a structured price recommendation and selling advice.
 
-Il modello considera le caratteristiche del capo e restituisce una valutazione strutturata in JSON.
-
-Il prompt è definito nel file:
+The active prompt is maintained in:
 
 ```text
 backend/src/prompts/evaluationSystemPrompt.js
 ```
 
-L'immagine viene trasmessa al modello attraverso una rappresentazione base64.
+The AI response is validated before being returned to the frontend.
 
-Le risposte sono sottoposte a validazione prima di essere restituite al frontend.
+## PostgreSQL Persistence
 
-## 11. Persistenza
+Successful evaluations are stored in the `evaluations` table, including:
 
-Ogni valutazione completata viene salvata nella tabella PostgreSQL `evaluations`.
+- Garment category, brand, and condition
+- Suggested, minimum, and maximum prices
+- Explanation and three selling tips
+- AI model name and prompt version
+- Creation timestamp
 
-I dati memorizzati comprendono:
+The schema for new installations is defined in `backend/database/migrations/001_initial_schema.sql`.
 
-- Categoria, brand e stato.
-- Prezzo suggerito e intervallo.
-- Motivazione e suggerimenti.
-- Modello AI e versione del prompt.
-- Data e ora della valutazione.
+## Limitations
 
-## 12. Limitazioni
+- Prices are estimates generated by AI, not guaranteed resale values.
+- The application does not query live marketplace listings or market prices.
+- Image quality and the accuracy of the supplied garment details affect results.
+- This is an educational prototype, not a certified appraisal service.
 
-- I prezzi sono stime generate da un modello AI.
-- Non è prevista un'integrazione con quotazioni di mercato in tempo reale.
-- La qualità della valutazione dipende dalle informazioni fornite e dalla fotografia.
-- L'applicazione rappresenta un prototipo didattico, non un servizio commerciale di valutazione certificata.
+## Deployment
 
-## 13. Deploy
+The frontend and backend can be deployed separately. The frontend can run on static hosting, while the backend requires a Node.js runtime, access to the Groq API, and a reachable PostgreSQL database.
 
-Il progetto è predisposto per la distribuzione separata di frontend e backend.
+Public deployment details will be added after deployment is completed.
 
-Il frontend può essere pubblicato su un servizio di hosting statico, mentre il backend richiede un ambiente Node.js e un database PostgreSQL raggiungibile.
+## Project Goal
 
-Gli indirizzi pubblici e le configurazioni definitive saranno documentati dopo il deploy.
+Demonstrate an end-to-end integration of a Vue interface, an Express API, a multimodal AI model accessed through Groq, and PostgreSQL persistence for a practical second-hand fashion use case.
 
-## 14. Obiettivo del progetto
+## Security Notes
 
-Dimostrare l'integrazione end-to-end tra interfaccia Vue, backend Express, modello AI multimodale e database PostgreSQL, attraverso un caso d'uso concreto legato alla moda second-hand.
+Keep API keys and database passwords in local environment variables or your hosting provider's secret manager. Never commit `.env` files or credentials to the repository.
