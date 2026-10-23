@@ -46,3 +46,6 @@ Desktop.ini
 *.db
 *.dump
 *.backup
+
+# Local Netlify folder
+.netlify

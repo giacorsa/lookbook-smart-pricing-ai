@@ -1,0 +1,24 @@
+{
+  "name": "lookbook-smart-pricing-ai",
+  "version": "1.0.0",
+  "description": "An AI-powered web application that estimates resale prices for second-hand clothing from a garment photo and a few descriptive details.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/giacorsa/lookbook-smart-pricing-ai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/giacorsa/lookbook-smart-pricing-ai/issues"
+  },
+  "homepage": "https://github.com/giacorsa/lookbook-smart-pricing-ai#readme",
+  "dependencies": {
+    "serverless-http": "^4.0.0"
+  }
+}
